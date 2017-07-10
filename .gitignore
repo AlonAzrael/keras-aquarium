@@ -1,0 +1,11 @@
+**/__X_*/
+**/__X_*/*
+
+**/*.pyc
+**/.DS_Store*
+
+**/.git*/
+**/.git*/*
+
+**/python-packages/**/.ipynb_checkpoints/**
+**/python-packages/**/.ipynb_checkpoints/
