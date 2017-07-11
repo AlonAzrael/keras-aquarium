@@ -9,7 +9,7 @@ import numpy as np
 
 
 
-def DeepMatrixFactorization(
+def DualMatrixFactorization(
     n_row,
     n_col,
     n_row_feature=None,
@@ -23,6 +23,75 @@ def DeepMatrixFactorization(
     # output_mode="single",
     model_name=None,
 ):
+    """Dual Deep Matrix Factorization.
+
+    By introducing deeper encoding of both user vectors and item vectors, it outperform than simple Matrix Factorization.
+    The model is inspried by paper [COLLABORATIVE DEEP EMBEDDING VIA DUAL NETWORKS](https://openreview.net/pdf?id=r1w7Jdqxl)
+
+    Parameters
+    ----------
+    n_row : the row of matrix.
+    n_col : the col of matrix.
+    n_row_feature :
+        number of row features, default is None, no row features are applied.
+    n_col_feature :
+        number of col features, default is None, no col features are applied.
+    row_dim : embedding dim of a row element.
+    col_dim : embedding dim of a col element.
+    row_feature_dim :
+        latent representation dim of a row features.
+    col_feature_dim :
+        latent representation dim of a col features.
+    row_layers : list of tuple (dim, activation) or callable
+        To construct hidden layers.
+    col_layers : list of tuple (dim, activation) or callable
+        To construct hidden layers.
+    model_name : str
+        name of the model.
+
+    Examples
+    --------
+
+    import keras
+    from keras_aquarium import dmf
+    from scipy.sparse import csr_matrix, coo_matrix
+
+    # suppose you have a sparse matrix as a user item rating matrix
+    rating_matrix = coo_matrix( shape=[n_user, n_item] )
+    users = rating_matrix.row
+    items = rating_matrix.col
+    ratings = rating_matrix.data
+
+    # you also have a sparse feature matrix for item, such as location of item, price of item, etc.
+    item_features = csr_matrix( shape=[n_item, n_item_feature] )
+    # and sadly, you dont have any feature for user
+    user_features = None
+
+    # then you want to apply a Matrix Factorization model to predict ratings
+    model = dmf.DualMatrixFactorization(
+        # we choose user as row, item as col
+        n_row=n_user, n_col=n_item, # specified matrix shape
+        # or we can choose item as row, user as col, n_row=n_item, n_col=n_user, just transpose the matrix
+
+        n_row_feature=None, # we dont have user feature
+        n_col_feature=n_item_feature, # we do have item feature
+        row_dim=30, col_dim=20, # specifed embedding dim, each user and item is then first embedded as a vector
+        row_feature_dim=None, # no user feature
+        col_feature_dim=None, # specifed item feature embedding dim, each item feature will be encoded as a dense vector
+
+        # row_layers and col_layers are for encoding layers for user and item,
+        # they work separately, so they can have different number of hidden layers
+        # just make sure the finla hidden layer are the same dim
+        row_layers=[(50, "relu"), (30, keras.losses.tanh)], # use two hidden layers, first one is a dense layer with 50 unit and relu activation, second one is a dense layer with 30 unit and tanh activation
+        col_layers=[ (lambda x: Dense(30, regularizer=l2(0.001))(x) ), ], # can use a callable to create a hidden layer
+    )
+
+    # use it as a keras model
+    model.compile(loss="mse", optimizer="adam", )
+
+    inputs = [users] + [items, item_features[items], ] # note that there is no user_features
+    model.fit(inputs, ratings, )
+    """
 
     def make_row_layers(n_row, n_row_feature, row_feature_dim):
         row_input = Input(shape=(1,), dtype="int32")

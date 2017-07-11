@@ -18,6 +18,57 @@ def HierarchicalAttentionRNN(
     word_hidden_dim=100,
     sent_hidden_dim=100,
 ):
+    """Hierarchical Attention RNN(GRU)
+
+    Two level of lstm network for text Classification, encode sentence by words first, then encode document by sentences.
+    Also add attention for both words and sentences.
+
+    Check paper [HIERARCHICAL ATTENTION NETWORKS FOR DOCUMENT CLASSIFICATION](https://www.cs.cmu.edu/~hovy/papers/16HLT-hierarchical-attention-networks.pdf) for more details.
+
+    Parameters
+    ----------
+
+    max_sents : number of sentences in a document
+    max_sent_length : number of words in a sentence
+    n_classes : number of classes
+    embeddings :
+        use it to initialize word embeddings if applied
+    n_words : number of words in vocabulary
+    word_dim : dim of word embeddings
+    word_hidden_dim : number of word units in rnn
+    sent_hidden_dim : number of sentence units in rnn
+
+    Examples
+    --------
+
+    import keras
+    from keras_aquarium import hatt_rnn
+    from scipy.sparse import csr_matrix
+    import numpy as np
+
+    # suppose you have a 3D matrix (n_docs * n_sentences_in_doc * n_words_in_sentence), represents documents,
+    sequence_docs = np.zeros([n_docs, n_sentences_in_doc, n_words_in_sentence]) # padding zeros
+    word_embeddings = load_glove_word_embeddings()
+    vocabulary = load_vocabulary()
+
+    model = hatt_rnn.HierarchicalAttentionRNN(
+        max_sents,
+        max_sent_length,
+        n_classes,
+
+        # if use word_embeddings to initialize word embeddings layer
+        embeddings=word_embeddings,
+        # else
+        n_words=len(vocabulary),
+        word_dim=50,
+
+        # units in words and sentences gru layer
+        word_hidden_dim=100,
+        sent_hidden_dim=100,
+    )
+
+    model.fit(sequence_docs, labels)
+    """
 
     if embeddings is None:
         # embeddings = np.random.uniform([n_words, word_dim])
@@ -56,7 +107,7 @@ def HierarchicalAttentionRNN(
         def call(self, xli, mask=None):
 #             eij = K.tanh(K.dot(x, self.W))
             hit, x = xli
-            print "hit.shape:", K.int_shape(hit)
+            # print "hit.shape:", K.int_shape(hit)
 
             def get_weights_(x):
                 eij = K.dot(x, K.reshape(self.W, [self._x_input_shape[-1], 1]) )
@@ -66,9 +117,9 @@ def HierarchicalAttentionRNN(
                 ai = K.exp(eij)
                 ai_sum = K.sum(ai, axis=1)
                 ai_sum = K.reshape(ai_sum, [-1, 1])
-                print "ai_sum.shape:", K.int_shape(ai_sum)
+                # print "ai_sum.shape:", K.int_shape(ai_sum)
                 weights = ai/ai_sum
-                print "weights.shape:", K.int_shape(weights)
+                # print "weights.shape:", K.int_shape(weights)
 
                 return weights
 
@@ -81,10 +132,10 @@ def HierarchicalAttentionRNN(
             weighted_input = K.batch_dot(weights, hit, axes=[2, 1, ])
             weighted_input = K.squeeze(weighted_input, axis=1)
 
-            # weighted_input = K.tf.einsum("ijk,ij->ijk", hit, weights) # TODO: fix tf.einsum to general method
+            # weighted_input = K.tf.einsum("ijk,ij->ijk", hit, weights) # batch_dot is equivalent to K.tf.einsum to general method
             # weighted_input = K.sum(weighted_input, axis=1)
 
-            print "weighted_input.shape:", K.int_shape(weighted_input)
+            # print "weighted_input.shape:", K.int_shape(weighted_input)
 
             return weighted_input
 

@@ -8,8 +8,8 @@ from scipy.sparse import csr_matrix
 
 
 class Dense_tied(Dense):
-    """
-    A fully connected layer with tied weights.
+    """A fully connected layer with tied weights.
+    Can be used as a normal keras dense layer
     """
     def __init__(self, units,
                  activation=None, use_bias=True,
@@ -51,6 +51,67 @@ def SoftmaxAutoEncoder(
     sparse=True, use_tied_layer=True, use_binary_activation=True, alpha=50,
     lr=0.001,
 ):
+    """Softmax AutoEncoder
+
+    Autoencoder using kullback_leibler_divergence as objective function, and softmax as output activation.
+    Requiring input matrix row sum to 1.
+
+    Parameters
+    ----------
+    
+    input_dim : dim of input sample.
+    latent_dim : latent dim of latent vector.
+    encoder :
+        if not None, then will be used as latent_vector = encoder(input_layer).
+    decoder :
+        if not None, then will be used as generated_input = decoder(latent_vector).
+    activation :
+        default is "tanh" when use_binary_activation is False, otherwise variant sigmoid.
+    loss : default is kullback_leibler_divergence.
+    use_tied_layer :
+        whether to use tied layer or not,
+        used only when encoder and decoder is None.
+    use_binary_activation :
+        if True, using variant sigmoid 1/(1+exp(alpha*-x)).
+    alpha : alpha in variant sigmoid.
+    lr : learning rate.
+
+    Examples
+    --------
+
+    import keras
+    from keras_aquarium import sae
+    from scipy.sparse import csr_matrix
+    import numpy as np
+
+    # suppose you have a sparse matrix, which represents bag-of-words documents
+    bow_docs = csr_matrix([n_docs, n_words])
+
+    model = sae.SoftmaxAutoEncoder(
+        input_dim, # dim of input sample
+        latent_dim=50, # latent dim of latent vector
+        encoder=None, # if not None, then will be used as latent_vector = encoder(input_layer),
+        decoder=None, # if not None, then will be used as generated_input = decoder(latent_vector)
+        activation=None, # default is "tanh" when use_binary_activation is False, otherwise variant sigmoid
+        loss=None, # default is kullback_leibler_divergence
+        use_tied_layer=True, # whether to use tied layer or not, used only when encoder and decoder is None
+        use_binary_activation=True, # if True, using variant sigmoid 1/(1+exp(alpha*-x))
+        alpha=50, # alpha in variant sigmoid
+    )
+
+    def generate_dataset(batch_size):
+        # memory friendly
+        indices = np.arange(len(bow_docs))
+        while True:
+            np.random.shuffle(indices)
+            for i in xrange(0, len(indices), batch_size):
+                inds = indices[i:i+batch_size]
+                yield bow_docs[inds], bow_docs[inds].toarray()
+
+    batch_size = 32
+    model.fit_generator( generate_dataset(batch_size),  len(bow_docs)/batch_size, )
+    """
+
     input_layer = Input(shape=[input_dim,], sparse=sparse)
 
     if encoder is not None:
@@ -111,10 +172,17 @@ def SoftmaxAutoEncoder(
 def train_model(model, X, epochs=5, verbose=2, batch_size=32):
     assert type(X) == csr_matrix
 
-    # TODO: a solution use sparse matrix as output is required, check out Keras code for detail, or use fit_generator
-    Xdense = X.toarray()
+    def generate_dataset(batch_size):
+        # memory friendly
+        indices = np.arange(len(X))
+        while True:
+            np.random.shuffle(indices)
+            for i in xrange(0, len(indices), batch_size):
+                inds = indices[i:i+batch_size]
+                yield X[inds], X[inds].toarray()
 
-    model.fit(X, Xdense, epochs=epochs, verbose=verbose, batch_size=batch_size, )
+    # Xdense = X.toarray()
+    model.fit_generator(generate_dataset(batch_size), len(X)/batch_size, epochs=epochs, verbose=verbose )
 
     return model
 
