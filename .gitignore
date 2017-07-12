@@ -7,5 +7,11 @@
 **/.git*/
 **/.git*/*
 
-**/python-packages/**/.ipynb_checkpoints/**
+**/python-packages/**/.ipynb_checkpoints/*
 **/python-packages/**/.ipynb_checkpoints/
+
+**/build/*
+**/build/
+**/dist/*
+**/dist/
+**/*.egg*

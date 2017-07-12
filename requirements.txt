@@ -1,4 +1,4 @@
-keras >= 2.0.0
+keras >= 2.0.0 # only run with keras2
 numpy >= 1.7.1
 scikit-learn >= 0.17.0
 scipy >= 0.14.1

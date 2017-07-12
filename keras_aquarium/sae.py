@@ -58,7 +58,7 @@ def SoftmaxAutoEncoder(
 
     Parameters
     ----------
-    
+
     input_dim : dim of input sample.
     latent_dim : latent dim of latent vector.
     encoder :
@@ -192,3 +192,12 @@ def get_latent_code(model, X):
     codes = encoder.predict(X)
 
     return codes
+
+
+def evaluate_cluster(y_true, y_pred):
+    mi = mutual_info_score(y_true, y_pred)
+    ami = adjusted_mutual_info_score(y_true, y_pred)
+    comp = completeness_score(y_true, y_pred)
+    hom = homogeneity_score(y_true, y_pred)
+    vs = v_measure_score(y_true, y_pred)
+    return mi, ami, comp, hom, vs

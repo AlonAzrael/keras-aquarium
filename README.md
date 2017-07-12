@@ -1,4 +1,4 @@
-## keras-aquarium is a small collection of some useful models powered by keras  
+## keras-aquarium is a small collection of models powered by keras  
 
 In this repository, following models are included:
 
@@ -91,6 +91,15 @@ def generate_dataset(batch_size):
 
 batch_size = 32
 model.fit_generator( generate_dataset(batch_size),  len(bow_docs)/batch_size, )
+
+# after training model, we can run kmeans to get topic distribution
+from sklearn.cluster import KMeans
+km = KMeans(n_clsuters=20)
+y_pred = km.fit_predict(sae.get_latent_code(bow_docs))
+
+# scoring our topic by comparing topic and true document labels
+from sklearn.metrics import homogeneity_completeness_v_measure
+homogeneity, completeness, v_measure = homogeneity_completeness_v_measure(y_true, y_pred)
 ```
 
 
